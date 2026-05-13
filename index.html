@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>COLKA-ID | Generador de Documentos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .document-preview { width: 210mm; height: 297mm; background: white; margin: 2rem auto; padding: 2cm; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; border-radius: 4px; }
+        @media print { .no-print { display: none; } .document-preview { margin: 0; box-shadow: none; border-radius: 0; } }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+
+<div class="max-w-4xl mx-auto no-print mb-10">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="bg-blue-600 p-2 rounded-lg text-white font-black italic">C-ID</div>
+        <h1 class="text-2xl font-black text-zinc-800 uppercase tracking-tighter">COLKA-ID <span class="text-blue-600">CREATIVE</span></h1>
+    </div>
+    
+    <div class="bg-white p-8 rounded-3xl shadow-xl border border-zinc-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+            <label class="text-[10px] font-bold uppercase text-zinc-400 pl-1">Información del Ciudadano</label>
+            <input id="nombre" type="text" placeholder="Nombre completo" class="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:border-blue-500 transition-all">
+            <input id="dni" type="text" placeholder="DNI" class="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:border-blue-500 transition-all">
+        </div>
+        <div class="space-y-4">
+            <label class="text-[10px] font-bold uppercase text-zinc-400 pl-1">Datos del Terreno / Trámite</label>
+            <input id="ubicacion" type="text" placeholder="Lugar (Ej: Allpa Urcuna)" class="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:border-blue-500 transition-all">
+            <button onclick="generar()" class="w-full h-[60px] bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-blue-200">GENERAR DOCUMENTO TECH</button>
+        </div>
+    </div>
+</div>
+
+<div id="certificado" class="document-preview">
+    <div class="flex justify-between items-start border-b-2 border-blue-600 pb-8 mb-12">
+        <div>
+            <h3 class="text-3xl font-black text-blue-600 italic tracking-tighter">INVERSIONES COLKA</h3>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.3em]">Servicios Administrativos • Colcabamba</p>
+        </div>
+        <div id="qrcode" class="p-3 bg-zinc-50 border border-zinc-100 rounded-xl"></div>
+    </div>
+
+    <div class="py-12">
+        <h2 class="text-center text-4xl font-black uppercase tracking-[0.2em] text-zinc-900 mb-20 underline decoration-blue-500 underline-offset-8">Certificado de Posesión</h2>
+        <div class="text-zinc-700 text-xl leading-[2.5rem] space-y-8">
+            <p>Se certifica que el señor(a) <span id="res-nombre" class="font-black text-black border-b-2 border-zinc-200 px-2 italic">__________</span>, identificado(a) con D.N.I. N° <span id="res-dni" class="font-black text-black border-b-2 border-zinc-200 px-2">__________</span>...</p>
+            <p>Ejerce la posesión de forma pacífica y continua del terreno ubicado en <span id="res-ubicacion" class="font-black text-blue-600 italic px-2">__________</span>, perteneciente a la jurisdicción de la Provincia de Tayacaja, Región Huancavelica.</p>
+        </div>
+    </div>
+
+    <div class="absolute bottom-20 left-20 right-20">
+        <div class="flex justify-between items-end">
+            <div class="text-center w-64 border-t-2 border-zinc-100 pt-4">
+                <p class="text-[10px] font-bold text-zinc-400 uppercase">Firma del Solicitante</p>
+            </div>
+            <div class="text-right">
+                <div class="text-blue-600 font-black text-sm italic">✓ COLKA VERIFIED</div>
+                <p class="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Validación por QR Digital</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function generar() {
+        const n = document.getElementById('nombre').value;
+        const d = document.getElementById('dni').value;
+        const u = document.getElementById('ubicacion').value;
+        document.getElementById('res-nombre').innerText = n || '__________';
+        document.getElementById('res-dni').innerText = d || '__________';
+        document.getElementById('res-ubicacion').innerText = u || '__________';
+        document.getElementById("qrcode").innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), {
+            text: `VALIDO: Inversiones Colka\nTitular: ${n}\nDNI: ${d}\nLugar: ${u}`,
+            width: 100, height: 100, colorDark : "#2563eb"
+        });
+    }
+</script>
+</body>
+</html>
