@@ -5,50 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COLKA-ID | Gestión Documental Pro</title>
     
-    <!-- Librerías de Diseño y Funcionalidad -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f1f5f9;
-        }
-
-        /* Estilo del Certificado A4 */
-        .document-preview { 
-            width: 210mm; 
-            height: 297mm; 
-            background: white; 
-            margin: 2rem auto; 
-            padding: 2.5cm; 
-            box-shadow: 0 40px 100px rgba(0,0,0,0.1); 
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Decoración Tech */
-        .tech-line {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 8px;
-            background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
-        }
-
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; padding: 0; }
-            .document-preview { margin: 0; box-shadow: none; border: none; }
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+        .document-preview { width: 210mm; height: 297mm; background: white; margin: 2rem auto; padding: 2.5cm; box-shadow: 0 40px 100px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        .tech-line { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa); }
+        .hidden-panel { display: none; } /* Clase para ocultar secciones */
+        @media print { .no-print { display: none !important; } body { background: white; margin: 0; padding: 0; } .document-preview { margin: 0; box-shadow: none; border: none; } }
     </style>
 </head>
 <body class="antialiased text-slate-900">
 
-    <!-- PANEL DE CONTROL (No se imprime) -->
-    <div class="max-w-5xl mx-auto p-6 no-print">
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div id="main-app" class="max-w-5xl mx-auto p-6 no-print">
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tighter text-blue-700 italic">COLKA <span class="text-slate-400">ID</span></h1>
@@ -56,15 +29,15 @@
             </div>
             <div class="flex gap-3">
                 <button onclick="descargarPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-emerald-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     DESCARGAR PDF
                 </button>
             </div>
         </header>
 
-        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- FORMULARIO DE ENTRADA -->
+        <div id="form-section" class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Titular del Documento</label>
+                <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Titular / Código de Acceso</label>
                 <input id="nombre" type="text" placeholder="Nombre completo" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
             </div>
             <div class="space-y-2">
@@ -73,61 +46,95 @@
             </div>
             <div class="space-y-2">
                 <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Ubicación / Predio</label>
-                <input id="ubicacion" type="text" placeholder="Lugar (Ej: Allpa Urcuna)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <input id="ubicacion" type="text" placeholder="Lugar" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
             </div>
-            <button onclick="actualizar()" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-200">
-                Generar Certificado Inteligente
+            <button onclick="verificarAcceso()" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-200">
+                Procesar Información
             </button>
+        </div>
+
+        <!-- PANEL ADMINISTRATIVO (SECRETO) -->
+        <div id="admin-panel" class="hidden-panel mt-8 bg-slate-900 text-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-800">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-black text-blue-400">ADMIN DASHBOARD <span class="text-white text-xs opacity-50 ml-2">v2.0</span></h2>
+                <button onclick="cerrarSesion()" class="text-xs font-bold text-red-400 border border-red-400/30 px-4 py-2 rounded-xl hover:bg-red-400/10 transition-all">CERRAR PANEL</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700">
+                    <p class="text-[10px] text-slate-400 font-bold mb-1 uppercase">Ventas del Día</p>
+                    <p class="text-3xl font-black text-emerald-400">S/ 450.00</p>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700">
+                    <p class="text-[10px] text-slate-400 font-bold mb-1 uppercase">Documentos Emitidos</p>
+                    <p class="text-3xl font-black">12</p>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700">
+                    <p class="text-[10px] text-slate-400 font-bold mb-1 uppercase">Estado de Base de Datos</p>
+                    <p class="text-3xl font-black text-blue-400 italic">ACTIVA</p>
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-blue-600/10 border border-blue-500/20 rounded-3xl">
+                <h3 class="font-bold mb-4">Accesos Rápidos</h3>
+                <div class="flex gap-4">
+                    <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-bold">Ver Inventario</button>
+                    <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-bold">Base de Datos Firebase</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- VISTA PREVIA DEL CERTIFICADO (A4) -->
-    <div id="certificado" class="document-preview">
-        <div class="tech-line"></div>
-        
-        <div class="flex justify-between items-start mb-24">
-            <div>
-                <h2 class="text-3xl font-black text-blue-600 italic tracking-tighter">INVERSIONES COLKA</h2>
-                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Servicios Administrativos • Colcabamba</div>
-                <div class="mt-4 text-[10px] text-slate-500">
-                    <p>Ubicación: 1er Piso, Hotel Del Pino</p>
-                    <p>Huancavelica - Tayacaja</p>
+    <div id="certificado-container" class="no-print">
+        <div id="certificado" class="document-preview">
+            <div class="tech-line"></div>
+            <div class="flex justify-between items-start mb-24">
+                <div>
+                    <h2 class="text-3xl font-black text-blue-600 italic tracking-tighter">INVERSIONES COLKA</h2>
+                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Servicios Administrativos • Colcabamba</div>
                 </div>
-            </div>
-            <div class="flex flex-col items-center gap-2">
                 <div id="qrcode" class="p-2 border border-slate-100 rounded-xl bg-slate-50"></div>
-                <span class="text-[8px] font-bold text-blue-500 tracking-tighter uppercase">Validación Digital</span>
             </div>
-        </div>
-
-        <div class="text-center mb-24">
-            <h1 class="text-4xl font-black uppercase tracking-[0.2em] text-slate-900 border-b-4 border-blue-600 inline-block pb-2">CERTIFICADO DE POSESIÓN</h1>
-        </div>
-
-        <div class="space-y-12 text-slate-700 text-xl leading-relaxed text-justify px-10">
-            <p>Por la presente, se hace constar de manera oficial que el ciudadano(a) <span id="res-nombre" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2 italic">____________________</span>, debidamente identificado(a) con D.N.I. N° <span id="res-dni" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2">____________________</span>.</p>
-            
-            <p>Ejerce la posesión real, pacífica y continua de un predio ubicado en el sector denominado <span id="res-ubicacion" class="font-black text-blue-600 italic px-2">____________________</span>, perteneciente a la jurisdicción del Distrito de Colcabamba, Provincia de Tayacaja, Región Huancavelica.</p>
-            
-            <p>Se expide el presente documento a solicitud de la parte interesada, para los fines legales y administrativos que estime por conveniente.</p>
-        </div>
-
-        <div class="absolute bottom-24 left-24 right-24">
-            <div class="flex justify-between items-end">
-                <div class="text-center w-64 pt-6 border-t border-slate-200">
-                    <p class="text-[10px] font-black text-slate-400 uppercase">Firma del Titular</p>
-                </div>
+            <div class="text-center mb-24">
+                <h1 class="text-4xl font-black uppercase tracking-[0.2em] text-slate-900 border-b-4 border-blue-600 inline-block pb-2">CERTIFICADO DE POSESIÓN</h1>
+            </div>
+            <div class="space-y-12 text-slate-700 text-xl leading-relaxed text-justify px-10">
+                <p>Por la presente, se hace constar oficialmente que el ciudadano(a) <span id="res-nombre" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2 italic"></span>, con D.N.I. N° <span id="res-dni" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2"></span>.</p>
+                <p>Ejerce la posesión del predio en el sector <span id="res-ubicacion" class="font-black text-blue-600 italic px-2"></span>, Colcabamba.</p>
+            </div>
+            <div class="absolute bottom-24 left-24 right-24 flex justify-between items-end">
+                <div class="text-center w-64 pt-6 border-t border-slate-200 text-[10px] font-black text-slate-400 uppercase">Firma del Titular</div>
                 <div class="text-right">
-                    <div class="text-blue-600 font-black text-xs italic tracking-tighter mb-1">✓ DOCUMENTO VERIFICADO</div>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Inversiones Colka Digital ID</p>
-                    <p id="res-fecha" class="text-[9px] text-slate-400 mt-1 font-bold italic"></p>
+                    <p id="res-fecha" class="text-[9px] text-slate-400 font-bold italic"></p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Actualiza la vista previa del documento
+        function verificarAcceso() {
+            const nombreInput = document.getElementById('nombre').value;
+            
+            // SI EL NOMBRE ES EL CÓDIGO SECRETO
+            if (nombreInput === "JULIO123") {
+                document.getElementById('admin-panel').classList.remove('hidden-panel');
+                document.getElementById('certificado-container').classList.add('hidden-panel');
+                // Limpiar el input para seguridad
+                document.getElementById('nombre').value = "";
+                alert("Acceso de Administrador Concedido");
+            } else {
+                // Si es un nombre normal, genera el certificado
+                document.getElementById('admin-panel').classList.add('hidden-panel');
+                document.getElementById('certificado-container').classList.remove('hidden-panel');
+                actualizar();
+            }
+        }
+
+        function cerrarSesion() {
+            document.getElementById('admin-panel').classList.add('hidden-panel');
+            document.getElementById('certificado-container').classList.remove('hidden-panel');
+            document.getElementById('nombre').focus();
+        }
+
         function actualizar() {
             const nombre = document.getElementById('nombre').value;
             const dni = document.getElementById('dni').value;
@@ -139,35 +146,24 @@
             document.getElementById('res-ubicacion').innerText = ubicacion || '____________________';
             document.getElementById('res-fecha').innerText = `Emitido el: ${fechaActual}`;
 
-            // Generar Código QR
             document.getElementById("qrcode").innerHTML = "";
             new QRCode(document.getElementById("qrcode"), {
-                text: `VALIDACIÓN: Inversiones Colka\nTitular: ${nombre}\nDNI: ${dni}\nLugar: ${ubicacion}\nHotel Del Pino, Colcabamba`,
-                width: 90,
-                height: 90,
-                colorDark : "#2563eb",
-                colorLight : "#ffffff"
+                text: `VALIDACIÓN: Inversiones Colka\nTitular: ${nombre}\nDNI: ${dni}\nHotel Del Pino`,
+                width: 90, height: 90, colorDark : "#2563eb", colorLight : "#ffffff"
             });
         }
 
-        // Función para descargar como PDF
         function descargarPDF() {
             const element = document.getElementById('certificado');
-            const dni = document.getElementById('dni').value || 'DOC';
-            
             const opt = {
-                margin:       0,
-                filename:     `Certificado_Colka_${dni}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin: 0,
+                filename: `Certificado_Colka.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-
             html2pdf().from(element).set(opt).save();
         }
-
-        // Iniciar con datos vacíos
-        actualizar();
     </script>
 </body>
 </html>
