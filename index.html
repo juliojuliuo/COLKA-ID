@@ -4,52 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COLKA | Portal</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        
-        /* Estilos del Certificado (Fachada) */
         .document-preview { width: 210mm; height: 297mm; background: white; margin: 2rem auto; padding: 2.5cm; box-shadow: 0 40px 100px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .tech-line { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa); }
-        
-        /* Clases utilitarias */
         .hidden-panel { display: none !important; }
-        
-        /* Custom Scrollbar para el Chat */
         .chat-scroll::-webkit-scrollbar { width: 6px; }
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-
-        @media print { 
-            .no-print { display: none !important; } 
-            body { background: white; margin: 0; padding: 0; } 
-            .document-preview { margin: 0; box-shadow: none; border: none; } 
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="antialiased text-slate-900 h-screen flex flex-col">
 
-    <!-- FACHADA: FORMULARIO GENERADOR -->
-    <div id="fachada-section" class="max-w-5xl mx-auto p-6 w-full no-print transition-all duration-500">
+    <div id="fachada-section" class="max-w-5xl mx-auto p-6 w-full transition-all duration-500">
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tighter text-blue-700 italic">COLKA <span class="text-slate-400">ID</span></h1>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Servicios Digitales</p>
             </div>
-            <button onclick="descargarPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-lg shadow-emerald-200">
-                DESCARGAR PDF
-            </button>
         </header>
 
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="space-y-2">
                 <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nombre / Código</label>
-                <!-- AQUI SE INGRESA LA CONTRASEÑA -->
                 <input id="nombre" type="text" placeholder="Ingrese nombre..." class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold">
             </div>
             <div class="space-y-2">
@@ -60,19 +43,16 @@
                 <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Lugar</label>
                 <input id="ubicacion" type="text" placeholder="Ej: Sector Centro" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
             </div>
-            <button onclick="procesarEntrada()" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-200">
+            <button onclick="window.procesarEntrada()" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-200">
                 Procesar Documento
             </button>
         </div>
     </div>
 
-    <!-- APLICACIÓN DE CHAT SECRETA -->
-    <div id="chat-app" class="hidden-panel max-w-4xl mx-auto w-full h-[90vh] mt-6 flex flex-col bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden no-print">
-        
-        <!-- Header del Chat -->
+    <div id="chat-app" class="hidden-panel max-w-4xl mx-auto w-full h-[90vh] mt-6 flex flex-col bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden">
         <div class="bg-slate-950 p-6 flex justify-between items-center border-b border-slate-800">
             <div class="flex items-center gap-4">
-                <div class="h-12 w-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
+                <div class="h-12 w-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-lg">
                     <span id="avatar-letra">I</span>
                 </div>
                 <div>
@@ -83,197 +63,112 @@
                     </p>
                 </div>
             </div>
-            <button onclick="cerrarSesion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700">
-                Desconectar
-            </button>
+            <button onclick="window.cerrarSesion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700">Desconectar</button>
         </div>
-
-        <!-- Área de Mensajes -->
-        <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-6 bg-[#0f172a] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-soft-light">
-            <!-- Los mensajes se generan aquí con JavaScript -->
+        <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-6 bg-[#0f172a]">
         </div>
-
-        <!-- Input de Mensaje -->
         <div class="p-5 bg-slate-950 border-t border-slate-800 flex items-center gap-3">
-            <input id="chat-input" type="text" placeholder="Escribe un mensaje aquí..." class="flex-1 bg-slate-800 text-white placeholder-slate-400 border border-slate-700 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-            <button onclick="enviarMensaje()" class="bg-blue-600 hover:bg-blue-500 text-white h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/30">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 ml-1">
-                    <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
-                </svg>
+            <input id="chat-input" type="text" placeholder="Escribe un mensaje aquí..." class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-2xl px-6 py-4 text-sm outline-none">
+            <button onclick="window.enviarMensaje()" class="bg-blue-600 hover:bg-blue-500 text-white h-14 w-14 rounded-2xl flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" /></svg>
             </button>
         </div>
     </div>
 
-    <!-- FACHADA: VISTA PREVIA DEL DOCUMENTO -->
-    <div id="certificado-container" class="no-print pb-10">
+    <div id="certificado-container" class="pb-10">
         <div id="certificado" class="document-preview">
             <div class="tech-line"></div>
             <div class="flex justify-between items-start mb-24">
-                <div>
-                    <h2 class="text-3xl font-black text-blue-600 italic tracking-tighter">INVERSIONES COLKA</h2>
-                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Sistemas y Administración</div>
-                </div>
+                <h2 class="text-3xl font-black text-blue-600 italic tracking-tighter">INVERSIONES COLKA</h2>
                 <div id="qrcode" class="p-2 border border-slate-100 rounded-xl bg-slate-50"></div>
             </div>
             <div class="text-center mb-24">
-                <h1 class="text-4xl font-black uppercase tracking-[0.2em] text-slate-900 border-b-4 border-blue-600 inline-block pb-2">DOCUMENTO OFICIAL</h1>
+                <h1 class="text-4xl font-black uppercase text-slate-900 border-b-4 border-blue-600 inline-block pb-2">DOCUMENTO OFICIAL</h1>
             </div>
             <div class="space-y-12 text-slate-700 text-xl leading-relaxed text-justify px-10">
                 <p>Se hace constar que el ciudadano(a) <span id="res-nombre" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2 italic"></span>, con D.N.I. N° <span id="res-dni" class="font-extrabold text-slate-900 border-b-2 border-slate-200 px-2"></span>.</p>
                 <p>Tiene registro en el sector <span id="res-ubicacion" class="font-black text-blue-600 italic px-2"></span>.</p>
             </div>
-            <div class="absolute bottom-24 left-24 right-24 flex justify-between items-end">
-                <div class="text-center w-64 pt-6 border-t border-slate-200 text-[10px] font-black text-slate-400 uppercase">Firma y Sello</div>
-                <div class="text-right">
-                    <p id="res-fecha" class="text-[9px] text-slate-400 font-bold italic"></p>
-                </div>
-            </div>
         </div>
     </div>
 
-    <script>
-        // --- BASE DE DATOS TEMPORAL DEL CHAT ---
-        // Esto simula lo que luego hará Firebase.
-        let baseDeDatosMensajes = [
-            { emisor: "JULIO", texto: "El sistema está en línea. ¿Todo bien en Inversiones Colka?", hora: "09:00" },
-            { emisor: "SOPORTE", texto: "Todo perfecto. Esperando indicaciones.", hora: "09:05" }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        let usuarioActual = "";
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs-06X-Ym8_B8v34_55X5kY-4MvW8N9Y",
+            authDomain: "inversiones-colka.firebaseapp.com",
+            projectId: "inversiones-colka",
+            storageBucket: "inversiones-colka.appspot.com",
+            messagingSenderId: "1071477717431",
+            appId: "1:1071477717431:web:26a35076e0337424075193"
+        };
 
-        // --- LÓGICA DE ACCESO ---
-        function procesarEntrada() {
-            const inputVal = document.getElementById('nombre').value.trim().toUpperCase();
-            
-            // Credenciales secretas
-            if (inputVal === "JULIO123") {
-                iniciarSesion("JULIO", "J");
-            } else if (inputVal === "USER456") {
-                iniciarSesion("SOPORTE", "S");
-            } else {
-                // Si es un nombre normal, se queda en la fachada y genera el documento
-                document.getElementById('chat-app').classList.add('hidden-panel');
-                document.getElementById('certificado-container').classList.remove('hidden-panel');
-                generarDocumentoFachada();
-            }
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.usuarioActual = "";
 
-        function iniciarSesion(nombreUsuario, letraAvatar) {
-            usuarioActual = nombreUsuario;
-            
-            // Actualizar Interfaz del Chat
-            document.getElementById('nombre-usuario-activo').innerText = nombreUsuario;
-            document.getElementById('avatar-letra').innerText = letraAvatar;
-            document.getElementById('nombre').value = ""; // Limpiar input por seguridad
-            
-            // Ocultar Fachada, Mostrar Chat
+        window.procesarEntrada = function() {
+            const val = document.getElementById('nombre').value.toUpperCase();
+            if (val === "JULIO123") window.iniciarSesion("JULIO", "J");
+            else if (val === "USER456") window.iniciarSesion("SOPORTE", "S");
+            else window.generarDocumentoFachada();
+        };
+
+        window.iniciarSesion = function(n, l) {
+            window.usuarioActual = n;
+            document.getElementById('nombre-usuario-activo').innerText = n;
+            document.getElementById('avatar-letra').innerText = l;
             document.getElementById('fachada-section').classList.add('hidden-panel');
             document.getElementById('certificado-container').classList.add('hidden-panel');
             document.getElementById('chat-app').classList.remove('hidden-panel');
+        };
 
-            renderizarMensajes();
-        }
-
-        function cerrarSesion() {
-            usuarioActual = "";
+        window.cerrarSesion = function() {
+            window.usuarioActual = "";
             document.getElementById('chat-app').classList.add('hidden-panel');
             document.getElementById('fachada-section').classList.remove('hidden-panel');
             document.getElementById('certificado-container').classList.remove('hidden-panel');
-            document.getElementById('nombre').focus();
-        }
+        };
 
-        // --- LÓGICA DEL CHAT ---
-        function renderizarMensajes() {
+        const q = query(collection(db, "mensajes"), orderBy("timestamp", "asc"));
+        onSnapshot(q, (snap) => {
             const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML = ""; // Limpiar antes de dibujar
-
-            baseDeDatosMensajes.forEach(msg => {
-                const soyYo = (msg.emisor === usuarioActual);
-                
-                // Configuraciones visuales dependiendo de si envié yo el mensaje o no
-                const alineacion = soyYo ? "items-end" : "items-start";
-                const bgColor = soyYo ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200 border border-slate-700";
-                const esquinas = soyYo ? "rounded-tr-sm" : "rounded-tl-sm";
-                const infoColor = soyYo ? "text-blue-400" : "text-slate-400";
-                const margenInfo = soyYo ? "mr-1" : "ml-1";
-
-                const html = `
-                    <div class="flex flex-col ${alineacion} w-full animate-fade-in">
-                        <span class="text-[9px] font-bold ${infoColor} mb-1 ${margenInfo}">${msg.emisor} • ${msg.hora}</span>
-                        <div class="${bgColor} px-5 py-3.5 rounded-2xl ${esquinas} max-w-[75%] text-[15px] leading-relaxed shadow-md">
+            chatBox.innerHTML = "";
+            snap.forEach((doc) => {
+                const msg = doc.data();
+                const soyYo = (msg.emisor === window.usuarioActual);
+                let hora = msg.timestamp ? msg.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+                chatBox.innerHTML += `
+                    <div class="flex flex-col ${soyYo ? 'items-end' : 'items-start'} w-full animate-fade-in">
+                        <span class="text-[9px] font-bold text-slate-400 mb-1">${msg.emisor} • ${hora}</span>
+                        <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-5 py-3 rounded-2xl max-w-[75%] shadow-md">
                             ${msg.texto}
                         </div>
-                    </div>
-                `;
-                chatBox.innerHTML += html;
+                    </div>`;
             });
-
-            // Auto-scroll hacia abajo
             chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function enviarMensaje() {
-            const input = document.getElementById('chat-input');
-            const texto = input.value.trim();
-            
-            if (texto !== "") {
-                const ahora = new Date();
-                const horaStr = ahora.getHours().toString().padStart(2, '0') + ":" + ahora.getMinutes().toString().padStart(2, '0');
-
-                // Guardar en la "Base de Datos"
-                baseDeDatosMensajes.push({
-                    emisor: usuarioActual,
-                    texto: texto,
-                    hora: horaStr
-                });
-
-                input.value = ""; // Limpiar caja
-                renderizarMensajes(); // Redibujar
-            }
-        }
-
-        // Permitir enviar con la tecla Enter
-        document.getElementById('chat-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') enviarMensaje();
         });
 
-        // --- LÓGICA DE LA FACHADA (CERTIFICADO) ---
-        function generarDocumentoFachada() {
-            const nombre = document.getElementById('nombre').value;
-            const dni = document.getElementById('dni').value;
-            const ubicacion = document.getElementById('ubicacion').value;
-            const fechaActual = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+        window.enviarMensaje = async function() {
+            const input = document.getElementById('chat-input');
+            if (input.value.trim()) {
+                await addDoc(collection(db, "mensajes"), {
+                    emisor: window.usuarioActual,
+                    texto: input.value,
+                    timestamp: serverTimestamp()
+                });
+                input.value = "";
+            }
+        };
 
-            document.getElementById('res-nombre').innerText = nombre || '____________________';
-            document.getElementById('res-dni').innerText = dni || '____________________';
-            document.getElementById('res-ubicacion').innerText = ubicacion || '____________________';
-            document.getElementById('res-fecha').innerText = `Procesado: ${fechaActual}`;
-
-            document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), {
-                text: `VALIDACIÓN: ${nombre} - ${dni}`,
-                width: 90, height: 90, colorDark : "#2563eb", colorLight : "#ffffff"
-            });
-        }
-
-        function descargarPDF() {
-            const element = document.getElementById('certificado');
-            const opt = {
-                margin: 0, filename: `Documento_Colka.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(element).set(opt).save();
-        }
-
-        // CSS extra para animar la aparición de los mensajes
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-            .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        `;
-        document.head.appendChild(style);
+        window.generarDocumentoFachada = function() {
+            document.getElementById('res-nombre').innerText = document.getElementById('nombre').value;
+            document.getElementById('res-dni').innerText = document.getElementById('dni').value;
+            document.getElementById('res-ubicacion').innerText = document.getElementById('ubicacion').value;
+            new QRCode(document.getElementById("qrcode"), { text: "VAL-COLKA", width: 90, height: 90 });
+        };
     </script>
 </body>
 </html>
