@@ -3,31 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COLKA | Portal</title>
+    <title>COLKA | Portal Administrativo</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+        
+        /* Estilos del Certificado (Fachada) */
         .document-preview { width: 210mm; height: 297mm; background: white; margin: 2rem auto; padding: 2.5cm; box-shadow: 0 40px 100px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .tech-line { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa); }
+        
+        /* Utilidades Generales */
         .hidden-panel { display: none !important; }
+        
+        /* Scrollbar Personalizado del Chat */
         .chat-scroll::-webkit-scrollbar { width: 6px; }
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* Animación para mensajes nuevos */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+
+        /* Ocultar elementos al imprimir pdf */
+        @media print { 
+            .no-print { display: none !important; } 
+            body { background: white; margin: 0; padding: 0; } 
+            .document-preview { margin: 0; box-shadow: none; border: none; } 
+        }
     </style>
 </head>
 <body class="antialiased text-slate-900 h-screen flex flex-col">
 
-    <div id="fachada-section" class="max-w-5xl mx-auto p-6 w-full transition-all duration-500">
+    <div id="fachada-section" class="max-w-5xl mx-auto p-6 w-full transition-all duration-500 no-print">
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tighter text-blue-700 italic">COLKA <span class="text-slate-400">ID</span></h1>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Servicios Digitales</p>
             </div>
+            <button onclick="window.descargarPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-lg shadow-emerald-200">
+                DESCARGAR PDF
+            </button>
         </header>
 
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -49,7 +69,8 @@
         </div>
     </div>
 
-    <div id="chat-app" class="hidden-panel max-w-4xl mx-auto w-full h-[90vh] mt-6 flex flex-col bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden">
+    <div id="chat-app" class="hidden-panel max-w-4xl mx-auto w-full h-[90vh] mt-6 flex flex-col bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden no-print">
+        
         <div class="bg-slate-950 p-6 flex justify-between items-center border-b border-slate-800">
             <div class="flex items-center gap-4">
                 <div class="h-12 w-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-lg">
@@ -65,13 +86,29 @@
             </div>
             <button onclick="window.cerrarSesion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700">Desconectar</button>
         </div>
-        <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-6 bg-[#0f172a]">
-        </div>
-        <div class="p-5 bg-slate-950 border-t border-slate-800 flex items-center gap-3">
-            <input id="chat-input" type="text" placeholder="Escribe un mensaje aquí..." class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-2xl px-6 py-4 text-sm outline-none">
-            <button onclick="window.enviarMensaje()" class="bg-blue-600 hover:bg-blue-500 text-white h-14 w-14 rounded-2xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" /></svg>
-            </button>
+        
+        <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-4 bg-[#0f172a]">
+            </div>
+
+        <div class="p-5 bg-slate-950 border-t border-slate-800">
+            <div id="typing-indicator" class="text-[10px] text-emerald-500 font-bold mb-2 h-4 opacity-0 transition-opacity">
+                La otra persona está escribiendo...
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="window.enviarFoto()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 h-14 w-14 rounded-2xl flex items-center justify-center transition-all border border-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    </svg>
+                </button>
+
+                <input id="chat-input" oninput="window.marcarEscribiendo()" type="text" placeholder="Escribe un mensaje aquí..." class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500">
+                
+                <button onclick="window.enviarMensaje()" class="bg-blue-600 hover:bg-blue-500 text-white h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" /></svg>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -93,22 +130,25 @@
     </div>
 
     <script type="module">
+        // Importar Firebase 10 Modular
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // CREDENCIALES EXACTAS DE TU PROYECTO
         const firebaseConfig = {
-            apiKey: "AIzaSyAs-06X-Ym8_B8v34_55X5kY-4MvW8N9Y",
+            apiKey: "AIzaSyBcOLKenlK-ATzMgZL0i2kukr2l1gPJZfY",
             authDomain: "inversiones-colka.firebaseapp.com",
             projectId: "inversiones-colka",
-            storageBucket: "inversiones-colka.appspot.com",
-            messagingSenderId: "1071477717431",
-            appId: "1:1071477717431:web:26a35076e0337424075193"
+            storageBucket: "inversiones-colka.firebasestorage.app",
+            messagingSenderId: "760185289386",
+            appId: "1:760185289386:web:b7f0b49334b04efd40aed3"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         window.usuarioActual = "";
 
+        // --- MANEJO DE ENTRADA Y RUTAS SECRETA ---
         window.procesarEntrada = function() {
             const val = document.getElementById('nombre').value.toUpperCase();
             if (val === "JULIO123") window.iniciarSesion("JULIO", "J");
@@ -130,27 +170,49 @@
             document.getElementById('chat-app').classList.add('hidden-panel');
             document.getElementById('fachada-section').classList.remove('hidden-panel');
             document.getElementById('certificado-container').classList.remove('hidden-panel');
+            document.getElementById('nombre').value = "";
         };
 
+        // --- SISTEMA DE CHAT EN TIEMPO REAL ---
+        
+        // 1. Mostrar Mensajes y Fotos
         const q = query(collection(db, "mensajes"), orderBy("timestamp", "asc"));
         onSnapshot(q, (snap) => {
             const chatBox = document.getElementById('chat-box');
             chatBox.innerHTML = "";
-            snap.forEach((doc) => {
-                const msg = doc.data();
+            
+            snap.forEach((documento) => {
+                const msg = documento.data();
+                const idMensaje = documento.id;
                 const soyYo = (msg.emisor === window.usuarioActual);
-                let hora = msg.timestamp ? msg.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+                let contenido = msg.texto;
+                
+                // Si el mensaje tiene una URL de foto, estructurarla
+                if (msg.fotoUrl) {
+                    contenido = `<img src="${msg.fotoUrl}" class="rounded-lg max-w-full mb-2 border border-slate-700 shadow-sm">` + msg.texto;
+                }
+
+                // Botón de eliminar solo para mis mensajes
+                let botonBorrar = '';
+                if (soyYo) {
+                    botonBorrar = `<button onclick="window.borrarMensaje('${idMensaje}')" class="text-[10px] text-red-400 opacity-60 hover:opacity-100 transition-opacity ml-2">🗑️ Eliminar</button>`;
+                }
+
                 chatBox.innerHTML += `
-                    <div class="flex flex-col ${soyYo ? 'items-end' : 'items-start'} w-full animate-fade-in">
-                        <span class="text-[9px] font-bold text-slate-400 mb-1">${msg.emisor} • ${hora}</span>
+                    <div class="flex flex-col ${soyYo ? 'items-end' : 'items-start'} w-full animate-fade-in mb-2">
+                        <span class="text-[9px] font-bold text-slate-400 mb-1 flex items-center">
+                            ${msg.emisor} ${botonBorrar}
+                        </span>
                         <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-5 py-3 rounded-2xl max-w-[75%] shadow-md">
-                            ${msg.texto}
+                            ${contenido}
+                            ${soyYo ? '<span class="text-[10px] ml-2 opacity-70">✓✓</span>' : ''}
                         </div>
                     </div>`;
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
+        // 2. Enviar Mensaje de Texto
         window.enviarMensaje = async function() {
             const input = document.getElementById('chat-input');
             if (input.value.trim()) {
@@ -160,14 +222,91 @@
                     timestamp: serverTimestamp()
                 });
                 input.value = "";
+                // Apagar indicador de escribiendo al enviar
+                await setDoc(doc(db, "estado", "escribiendo"), { [window.usuarioActual]: false }, { merge: true });
             }
         };
 
+        // 3. Enviar Foto mediante URL
+        window.enviarFoto = async function() {
+            const url = prompt("Pega el enlace de la imagen:");
+            if (url) {
+                await addDoc(collection(db, "mensajes"), {
+                    emisor: window.usuarioActual,
+                    texto: "📷 Foto enviada",
+                    fotoUrl: url,
+                    timestamp: serverTimestamp()
+                });
+            }
+        };
+
+        // 4. Borrar Mensaje
+        window.borrarMensaje = async function(idMensaje) {
+            if (confirm("¿Seguro que quieres borrar este mensaje de Inversiones Colka?")) {
+                try {
+                    await deleteDoc(doc(db, "mensajes", idMensaje));
+                } catch (error) {
+                    console.error("Error al borrar:", error);
+                }
+            }
+        };
+
+        // 5. Lógica de "Escribiendo..."
+        let typingTimer;
+        window.marcarEscribiendo = async function() {
+            const typingRef = doc(db, "estado", "escribiendo");
+            await setDoc(typingRef, { [window.usuarioActual]: true }, { merge: true });
+            
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(async () => {
+                await setDoc(typingRef, { [window.usuarioActual]: false }, { merge: true });
+            }, 3000);
+        };
+
+        // Escuchar si el otro usuario escribe
+        onSnapshot(doc(db, "estado", "escribiendo"), (documento) => {
+            const data = documento.data();
+            const otroUsuario = window.usuarioActual === "JULIO" ? "SOPORTE" : "JULIO";
+            const indicador = document.getElementById('typing-indicator');
+            
+            if (data && data[otroUsuario]) {
+                indicador.classList.remove('opacity-0');
+            } else {
+                indicador.classList.add('opacity-0');
+            }
+        });
+
+        // Enviar con tecla Enter
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') window.enviarMensaje();
+        });
+
+        // --- SISTEMA DE FACHADA Y PDF ---
         window.generarDocumentoFachada = function() {
-            document.getElementById('res-nombre').innerText = document.getElementById('nombre').value;
-            document.getElementById('res-dni').innerText = document.getElementById('dni').value;
-            document.getElementById('res-ubicacion').innerText = document.getElementById('ubicacion').value;
-            new QRCode(document.getElementById("qrcode"), { text: "VAL-COLKA", width: 90, height: 90 });
+            const nombre = document.getElementById('nombre').value;
+            const dni = document.getElementById('dni').value;
+            const ubicacion = document.getElementById('ubicacion').value;
+            
+            document.getElementById('res-nombre').innerText = nombre || '____________________';
+            document.getElementById('res-dni').innerText = dni || '____________________';
+            document.getElementById('res-ubicacion').innerText = ubicacion || '____________________';
+            
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { 
+                text: `VALIDACIÓN: ${nombre} - ${dni}`, width: 90, height: 90, colorDark : "#2563eb", colorLight : "#ffffff"
+            });
+        };
+
+        window.descargarPDF = function() {
+            const element = document.getElementById('certificado');
+            const dni = document.getElementById('dni').value || 'DOC';
+            const opt = {
+                margin: 0, filename: `Certificado_${dni}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(opt).save();
         };
     </script>
 </body>
