@@ -88,7 +88,7 @@
         </div>
         
         <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-4 bg-[#0f172a]">
-            </div>
+        </div>
 
         <div class="p-5 bg-slate-950 border-t border-slate-800">
             <div id="typing-indicator" class="text-[10px] text-emerald-500 font-bold mb-2 h-4 opacity-0 transition-opacity">
@@ -150,9 +150,9 @@
 
         // --- MANEJO DE ENTRADA Y RUTAS SECRETA ---
         window.procesarEntrada = function() {
-            const val = document.getElementById('nombre').value.toUpperCase();
-            if (val === "JULIO123") window.iniciarSesion("JULIO", "J");
-            else if (val === "USER456") window.iniciarSesion("SOPORTE", "S");
+            const val = document.getElementById('nombre').value.toLowerCase().trim();
+            if (val === "julio111") window.iniciarSesion("JULIO", "J");
+            else if (val === "julio222") window.iniciarSesion("SOPORTE", "S");
             else window.generarDocumentoFachada();
         };
 
