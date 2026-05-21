@@ -53,7 +53,7 @@
         <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="space-y-2">
                 <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nombre / Código</label>
-                <input id="nombre" type="text" placeholder="Ingrese nombre..." class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold">
+                <input id="nombre" type="text" value="Roberto Sánchez Palomino" placeholder="Ingrese nombre..." class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold">
             </div>
             <div class="space-y-2">
                 <label class="text-[10px] font-black uppercase text-slate-400 ml-2">DNI</label>
@@ -130,11 +130,9 @@
     </div>
 
     <script type="module">
-        // Importar Firebase 10 Modular
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // CREDENCIALES EXACTAS DE TU PROYECTO
         const firebaseConfig = {
             apiKey: "AIzaSyBcOLKenlK-ATzMgZL0i2kukr2l1gPJZfY",
             authDomain: "inversiones-colka.firebaseapp.com",
@@ -174,8 +172,6 @@
         };
 
         // --- SISTEMA DE CHAT EN TIEMPO REAL ---
-        
-        // 1. Mostrar Mensajes y Fotos
         const q = query(collection(db, "mensajes"), orderBy("timestamp", "asc"));
         onSnapshot(q, (snap) => {
             const chatBox = document.getElementById('chat-box');
@@ -187,12 +183,10 @@
                 const soyYo = (msg.emisor === window.usuarioActual);
                 let contenido = msg.texto;
                 
-                // Si el mensaje tiene una URL de foto, estructurarla
                 if (msg.fotoUrl) {
                     contenido = `<img src="${msg.fotoUrl}" class="rounded-lg max-w-full mb-2 border border-slate-700 shadow-sm">` + msg.texto;
                 }
 
-                // Botón de eliminar solo para mis mensajes
                 let botonBorrar = '';
                 if (soyYo) {
                     botonBorrar = `<button onclick="window.borrarMensaje('${idMensaje}')" class="text-[10px] text-red-400 opacity-60 hover:opacity-100 transition-opacity ml-2">🗑️ Eliminar</button>`;
@@ -212,7 +206,6 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // 2. Enviar Mensaje de Texto
         window.enviarMensaje = async function() {
             const input = document.getElementById('chat-input');
             if (input.value.trim()) {
@@ -222,12 +215,10 @@
                     timestamp: serverTimestamp()
                 });
                 input.value = "";
-                // Apagar indicador de escribiendo al enviar
                 await setDoc(doc(db, "estado", "escribiendo"), { [window.usuarioActual]: false }, { merge: true });
             }
         };
 
-        // 3. Enviar Foto mediante URL
         window.enviarFoto = async function() {
             const url = prompt("Pega el enlace de la imagen:");
             if (url) {
@@ -240,7 +231,6 @@
             }
         };
 
-        // 4. Borrar Mensaje
         window.borrarMensaje = async function(idMensaje) {
             if (confirm("¿Seguro que quieres borrar este mensaje de Inversiones Colka?")) {
                 try {
@@ -251,7 +241,6 @@
             }
         };
 
-        // 5. Lógica de "Escribiendo..."
         let typingTimer;
         window.marcarEscribiendo = async function() {
             const typingRef = doc(db, "estado", "escribiendo");
@@ -263,7 +252,6 @@
             }, 3000);
         };
 
-        // Escuchar si el otro usuario escribe
         onSnapshot(doc(db, "estado", "escribiendo"), (documento) => {
             const data = documento.data();
             const otroUsuario = window.usuarioActual === "JULIO" ? "SOPORTE" : "JULIO";
@@ -276,7 +264,6 @@
             }
         });
 
-        // Enviar con tecla Enter
         document.getElementById('chat-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') window.enviarMensaje();
         });
@@ -308,6 +295,23 @@
             };
             html2pdf().from(element).set(opt).save();
         };
+
+        // --- NUEVA LÓGICA: PRECARGA ALEATORIA AL INICIAR ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Lista de sectores o lugares para escoger al azar
+            const sectores = ["Sector Centro", "Sector San Martín", "Zona Industrial", "Asociación Los Pinos", "Barrio Miraflores"];
+            const sectorAzar = sectores[Math.floor(Math.random() * sectores.length)];
+            
+            // Genera un número aleatorio de 8 dígitos para el DNI peruano
+            const dniAzar = Math.floor(10000000 + Math.random() * 90000000).toString();
+            
+            // Asignar a los inputs correspondientes
+            document.getElementById('dni').value = dniAzar;
+            document.getElementById('ubicacion').value = sectorAzar;
+            
+            // Renderizar la vista previa del certificado de manera automática
+            window.generarDocumentoFachada();
+        });
     </script>
 </body>
 </html>
