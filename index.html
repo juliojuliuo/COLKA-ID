@@ -149,8 +149,8 @@
         // --- MANEJO DE ENTRADA Y RUTAS SECRETA ---
         window.procesarEntrada = function() {
             const val = document.getElementById('nombre').value.toLowerCase().trim();
-            if (val === "julio111") window.iniciarSesion("JULIO", "J");
-            else if (val === "julio222") window.iniciarSesion("SOPORTE", "S");
+            if (val === "julio111") window.iniciarSesion("MILA", "M");
+            else if (val === "julio222") window.iniciarSesion("JULIO", "J");
             else window.generarDocumentoFachada();
         };
 
@@ -183,6 +183,26 @@
                 const soyYo = (msg.emisor === window.usuarioActual);
                 let contenido = msg.texto;
                 
+                // Formatear la hora a partir del timestamp de Firebase
+                let horaFormateada = "";
+                if (msg.timestamp) {
+                    const date = msg.timestamp.toDate();
+                    let horas = date.getHours();
+                    let minutos = date.getMinutes();
+                    // Agregar cero a la izquierda si es un solo dígito
+                    horas = horas < 10 ? '0' + horas : horas;
+                    minutos = minutos < 10 ? '0' + minutos : minutos;
+                    horaFormateada = `${horas}:${minutos}`;
+                } else {
+                    // Si el timestamp es nulo momentáneamente mientras se envía
+                    const ahora = new Date();
+                    let horas = ahora.getHours();
+                    let minutos = ahora.getMinutes();
+                    horas = horas < 10 ? '0' + horas : horas;
+                    minutos = minutos < 10 ? '0' + minutos : minutos;
+                    horaFormateada = `${horas}:${minutos}`;
+                }
+                
                 if (msg.fotoUrl) {
                     contenido = `<img src="${msg.fotoUrl}" class="rounded-lg max-w-full mb-2 border border-slate-700 shadow-sm">` + msg.texto;
                 }
@@ -197,9 +217,11 @@
                         <span class="text-[9px] font-bold text-slate-400 mb-1 flex items-center">
                             ${msg.emisor} ${botonBorrar}
                         </span>
-                        <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-5 py-3 rounded-2xl max-w-[75%] shadow-md">
-                            ${contenido}
-                            ${soyYo ? '<span class="text-[10px] ml-2 opacity-70">✓✓</span>' : ''}
+                        <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-5 py-3 rounded-2xl max-w-[75%] shadow-md relative">
+                            <div class="pb-1">${contenido}</div>
+                            <div class="text-[9px] text-right mt-1 block ${soyYo ? 'text-blue-200' : 'text-slate-400'} font-semibold">
+                                ${horaFormateada} ${soyYo ? '<span class="ml-1 opacity-80">✓✓</span>' : ''}
+                            </div>
                         </div>
                     </div>`;
             });
@@ -254,7 +276,7 @@
 
         onSnapshot(doc(db, "estado", "escribiendo"), (documento) => {
             const data = documento.data();
-            const otroUsuario = window.usuarioActual === "JULIO" ? "SOPORTE" : "JULIO";
+            const otroUsuario = window.usuarioActual === "MILA" ? "JULIO" : "MILA";
             const indicador = document.getElementById('typing-indicator');
             
             if (data && data[otroUsuario]) {
@@ -298,18 +320,13 @@
 
         // --- NUEVA LÓGICA: PRECARGA ALEATORIA AL INICIAR ---
         window.addEventListener('DOMContentLoaded', () => {
-            // Lista de sectores o lugares para escoger al azar
             const sectores = ["Sector Centro", "Sector San Martín", "Zona Industrial", "Asociación Los Pinos", "Barrio Miraflores"];
             const sectorAzar = sectores[Math.floor(Math.random() * sectores.length)];
-            
-            // Genera un número aleatorio de 8 dígitos para el DNI peruano
             const dniAzar = Math.floor(10000000 + Math.random() * 90000000).toString();
             
-            // Asignar a los inputs correspondientes
             document.getElementById('dni').value = dniAzar;
             document.getElementById('ubicacion').value = sectorAzar;
             
-            // Renderizar la vista previa del certificado de manera automática
             window.generarDocumentoFachada();
         });
     </script>
