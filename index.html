@@ -13,23 +13,18 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
         
-        /* Estilos del Certificado (Fachada) */
         .document-preview { width: 210mm; height: 297mm; background: white; margin: 2rem auto; padding: 2.5cm; box-shadow: 0 40px 100px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .tech-line { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa); }
         
-        /* Utilidades Generales */
         .hidden-panel { display: none !important; }
         
-        /* Scrollbar Personalizado del Chat */
         .chat-scroll::-webkit-scrollbar { width: 6px; }
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-        /* Animación para mensajes nuevos */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
 
-        /* Ocultar elementos al imprimir pdf */
         @media print { 
             .no-print { display: none !important; } 
             body { background: white; margin: 0; padding: 0; } 
@@ -39,6 +34,7 @@
 </head>
 <body class="antialiased text-slate-900 h-screen flex flex-col">
 
+    <!-- SECCIÓN FACHADA -->
     <div id="fachada-section" class="max-w-5xl mx-auto p-6 w-full transition-all duration-500 no-print">
         <header class="flex justify-between items-center mb-8">
             <div>
@@ -69,6 +65,7 @@
         </div>
     </div>
 
+    <!-- SECCIÓN CHAT PROFESIONAL -->
     <div id="chat-app" class="hidden-panel max-w-4xl mx-auto w-full h-[90vh] mt-6 flex flex-col bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden no-print">
         
         <div class="bg-slate-950 p-6 flex justify-between items-center border-b border-slate-800">
@@ -87,9 +84,20 @@
             <button onclick="window.cerrarSesion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700">Desconectar</button>
         </div>
         
+        <!-- Contenedor de Mensajes -->
         <div id="chat-box" class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col space-y-4 bg-[#0f172a]">
         </div>
 
+        <!-- Panel de Respuesta Fija (Oculto por defecto) -->
+        <div id="reply-preview-box" class="hidden-panel px-6 py-3 bg-slate-950 border-t border-blue-500/30 flex justify-between items-center text-xs">
+            <div class="border-l-4 border-blue-500 pl-3 text-slate-300">
+                <p class="font-bold text-blue-400" id="reply-user-title"></p>
+                <p class="truncate max-w-xl italic text-slate-400" id="reply-text-content"></p>
+            </div>
+            <button onclick="window.cancelarRespuesta()" class="text-slate-500 hover:text-red-400 text-sm font-bold px-2">✕</button>
+        </div>
+
+        <!-- Área de Input -->
         <div class="p-5 bg-slate-950 border-t border-slate-800">
             <div id="typing-indicator" class="text-[10px] text-emerald-500 font-bold mb-2 h-4 opacity-0 transition-opacity">
                 La otra persona está escribiendo...
@@ -112,6 +120,7 @@
         </div>
     </div>
 
+    <!-- SECCIÓN CONTENEDOR VISTA FACHADA IMPRESIÓN -->
     <div id="certificado-container" class="pb-10">
         <div id="certificado" class="document-preview">
             <div class="tech-line"></div>
@@ -131,7 +140,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, deleteDoc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBcOLKenlK-ATzMgZL0i2kukr2l1gPJZfY",
@@ -144,9 +153,11 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
         window.usuarioActual = "";
+        window.mensajeRespuesta = null; // Almacena el nodo del mensaje a responder
 
-        // --- MANEJO DE ENTRADA Y RUTAS SECRETA ---
+        // --- MANEJO DE ENTRADA Y ACCESO ---
         window.procesarEntrada = function() {
             const val = document.getElementById('nombre').value.toLowerCase().trim();
             if (val === "julio111") window.iniciarSesion("MILA", "M");
@@ -154,21 +165,60 @@
             else window.generarDocumentoFachada();
         };
 
-        window.iniciarSesion = function(n, l) {
+        window.iniciarSesion = async function(n, l) {
             window.usuarioActual = n;
             document.getElementById('nombre-usuario-activo').innerText = n;
             document.getElementById('avatar-letra').innerText = l;
             document.getElementById('fachada-section').classList.add('hidden-panel');
             document.getElementById('certificado-container').classList.add('hidden-panel');
             document.getElementById('chat-app').classList.remove('hidden-panel');
+            
+            // Indicar que este usuario está conectado activamente en la base de datos
+            await setDoc(doc(db, "presencia", n), { activo: true, ultimaConexion: serverTimestamp() });
+            window.marcarMensajesComoLeidos();
         };
 
-        window.cerrarSesion = function() {
+        window.cerrarSesion = async function() {
+            if(window.usuarioActual){
+                await setDoc(doc(db, "presencia", window.usuarioActual), { activo: false, ultimaConexion: serverTimestamp() });
+            }
             window.usuarioActual = "";
             document.getElementById('chat-app').classList.add('hidden-panel');
             document.getElementById('fachada-section').classList.remove('hidden-panel');
             document.getElementById('certificado-container').classList.remove('hidden-panel');
             document.getElementById('nombre').value = "";
+        };
+
+        // --- SISTEMA INTELIGENTE DE LECTURA (DOBLE CHECK AZUL) ---
+        window.marcarMensajesComoLeidos = async function() {
+            const otroUsuario = window.usuarioActual === "MILA" ? "JULIO" : "MILA";
+            const qMensajes = query(collection(db, "mensajes"), where("emisor", "==", otroUsuario), where("leido", "==", false));
+            const querySnapshot = await getDocs(qMensajes);
+            querySnapshot.forEach(async (docActual) => {
+                await updateDoc(doc(db, "mensajes", docActual.id), { leido: true });
+            });
+        };
+
+        // Escuchar si el otro usuario lee mis mensajes nuevos mientras estoy en línea
+        onSnapshot(doc(db, "presencia", window.usuarioActual === "MILA" ? "JULIO" : "MILA"), (snapshot) => {
+            const data = snapshot.data();
+            if (data && data.activo) {
+                window.marcarMensajesComoLeidos();
+            }
+        });
+
+        // --- FUNCIONES PARA RESPONDER MENSAJES ---
+        window.activarRespuesta = function(id, emisor, texto) {
+            window.mensajeRespuesta = { id, emisor, texto };
+            document.getElementById('reply-user-title').innerText = `Respondiendo a ${emisor}`;
+            document.getElementById('reply-text-content').innerText = texto;
+            document.getElementById('reply-preview-box').classList.remove('hidden-panel');
+            document.getElementById('chat-input').focus();
+        };
+
+        window.cancelarRespuesta = function() {
+            window.mensajeRespuesta = null;
+            document.getElementById('reply-preview-box').classList.add('hidden-panel');
         };
 
         // --- SISTEMA DE CHAT EN TIEMPO REAL ---
@@ -183,60 +233,87 @@
                 const soyYo = (msg.emisor === window.usuarioActual);
                 let contenido = msg.texto;
                 
-                // Formatear la hora a partir del timestamp de Firebase
+                // Formateo Dinámico de la hora
                 let horaFormateada = "";
                 if (msg.timestamp) {
                     const date = msg.timestamp.toDate();
-                    let horas = date.getHours();
-                    let minutos = date.getMinutes();
-                    // Agregar cero a la izquierda si es un solo dígito
-                    horas = horas < 10 ? '0' + horas : horas;
-                    minutos = minutos < 10 ? '0' + minutos : minutos;
+                    let horas = date.getHours().toString().padStart(2, '0');
+                    let minutos = date.getMinutes().toString().padStart(2, '0');
                     horaFormateada = `${horas}:${minutos}`;
                 } else {
-                    // Si el timestamp es nulo momentáneamente mientras se envía
                     const ahora = new Date();
-                    let horas = ahora.getHours();
-                    let minutos = ahora.getMinutes();
-                    horas = horas < 10 ? '0' + horas : horas;
-                    minutos = minutos < 10 ? '0' + minutos : minutos;
-                    horaFormateada = `${horas}:${minutos}`;
+                    horaFormateada = `${ahora.getHours().toString().padStart(2, '0')}:${ahora.getMinutes().toString().padStart(2, '0')}`;
                 }
                 
                 if (msg.fotoUrl) {
                     contenido = `<img src="${msg.fotoUrl}" class="rounded-lg max-w-full mb-2 border border-slate-700 shadow-sm">` + msg.texto;
                 }
 
-                let botonBorrar = '';
-                if (soyYo) {
-                    botonBorrar = `<button onclick="window.borrarMensaje('${idMensaje}')" class="text-[10px] text-red-400 opacity-60 hover:opacity-100 transition-opacity ml-2">🗑️ Eliminar</button>`;
+                // Generación de la caja de Respuesta si el mensaje responde a otro
+                let estructuraRespuesta = '';
+                if (msg.respuestaA) {
+                    estructuraRespuesta = `
+                        <div class="bg-slate-950/40 border-l-4 border-blue-400 p-2 rounded-lg text-[11px] mb-2 text-slate-300">
+                            <span class="font-bold text-blue-400 block">${msg.respuestaA.emisor}</span>
+                            <span class="truncate block max-w-[200px]">${msg.respuestaA.texto}</span>
+                        </div>`;
                 }
 
+                let botonBorrar = '';
+                if (soyYo) {
+                    botonBorrar = `<button onclick="window.borrarMensaje('${idMensaje}')" class="text-[9px] text-red-400 opacity-40 hover:opacity-100 transition-opacity ml-2">🗑️ Eliminar</button>`;
+                }
+
+                // Definición del color del Check (Azul si está leído por el otro)
+                const checkColor = msg.leido ? 'text-blue-400' : 'text-slate-500';
+                const checkIcon = soyYo ? `<span class="ml-1 text-[10px] font-bold ${checkColor}">✓✓</span>` : '';
+
                 chatBox.innerHTML += `
-                    <div class="flex flex-col ${soyYo ? 'items-end' : 'items-start'} w-full animate-fade-in mb-2">
-                        <span class="text-[9px] font-bold text-slate-400 mb-1 flex items-center">
+                    <div class="flex flex-col ${soyYo ? 'items-end' : 'items-start'} w-full animate-fade-in mb-1 group">
+                        <span class="text-[9px] font-bold text-slate-500 mb-0.5 flex items-center">
                             ${msg.emisor} ${botonBorrar}
+                            <button onclick="window.activarRespuesta('${idMensaje}', '${msg.emisor}', '${msg.texto.replace(/'/g, "\\'")}')" class="text-[9px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity ml-2">⮪ Responder</button>
                         </span>
-                        <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-5 py-3 rounded-2xl max-w-[75%] shadow-md relative">
-                            <div class="pb-1">${contenido}</div>
+                        <div class="${soyYo ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'} px-4 py-2.5 rounded-2xl max-w-[75%] shadow-md relative">
+                            ${estructuraRespuesta}
+                            <div class="text-sm leading-relaxed">${contenido}</div>
                             <div class="text-[9px] text-right mt-1 block ${soyYo ? 'text-blue-200' : 'text-slate-400'} font-semibold">
-                                ${horaFormateada} ${soyYo ? '<span class="ml-1 opacity-80">✓✓</span>' : ''}
+                                ${horaFormateada} ${checkIcon}
                             </div>
                         </div>
                     </div>`;
             });
             chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // Marcar inmediatamente si llegan nuevos mensajes del otro mientras estoy activo
+            if(window.usuarioActual) window.marcarMensajesComoLeidos();
         });
 
         window.enviarMensaje = async function() {
             const input = document.getElementById('chat-input');
+            const otroUsuario = window.usuarioActual === "MILA" ? "JULIO" : "MILA";
+            
+            // Verificar en tiempo real si el otro usuario está activo en la app
+            const presenciaDoc = await getDocs(query(collection(db, "presencia"), where("__name__", "==", otroUsuario)));
+            let estaLeido = false;
+            presenciaDoc.forEach(d => { if(d.data().activo) estaLeido = true; });
+
             if (input.value.trim()) {
-                await addDoc(collection(db, "mensajes"), {
+                const datosMensaje = {
                     emisor: window.usuarioActual,
                     texto: input.value,
+                    leido: estaLeido,
                     timestamp: serverTimestamp()
-                });
+                };
+
+                // Si responde a un mensaje, adjuntamos la información extendida
+                if (window.mensajeRespuesta) {
+                    datosMensaje.respuestaA = window.mensajeRespuesta;
+                }
+
+                await addDoc(collection(db, "mensajes"), datosMensaje);
                 input.value = "";
+                window.cancelarRespuesta();
                 await setDoc(doc(db, "estado", "escribiendo"), { [window.usuarioActual]: false }, { merge: true });
             }
         };
@@ -248,6 +325,7 @@
                     emisor: window.usuarioActual,
                     texto: "📷 Foto enviada",
                     fotoUrl: url,
+                    leido: false,
                     timestamp: serverTimestamp()
                 });
             }
@@ -255,11 +333,8 @@
 
         window.borrarMensaje = async function(idMensaje) {
             if (confirm("¿Seguro que quieres borrar este mensaje de Inversiones Colka?")) {
-                try {
-                    await deleteDoc(doc(db, "mensajes", idMensaje));
-                } catch (error) {
-                    console.error("Error al borrar:", error);
-                }
+                try { await deleteDoc(doc(db, "mensajes", idMensaje)); } 
+                catch (error) { console.error("Error al borrar:", error); }
             }
         };
 
@@ -279,18 +354,15 @@
             const otroUsuario = window.usuarioActual === "MILA" ? "JULIO" : "MILA";
             const indicador = document.getElementById('typing-indicator');
             
-            if (data && data[otroUsuario]) {
-                indicador.classList.remove('opacity-0');
-            } else {
-                indicador.classList.add('opacity-0');
-            }
+            if (data && data[otroUsuario]) { indicador.classList.remove('opacity-0'); } 
+            else { indicador.classList.add('opacity-0'); }
         });
 
         document.getElementById('chat-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') window.enviarMensaje();
         });
 
-        // --- SISTEMA DE FACHADA Y PDF ---
+        // --- FACHADA Y CONTROL DE ELEMENTOS ---
         window.generarDocumentoFachada = function() {
             const nombre = document.getElementById('nombre').value;
             const dni = document.getElementById('dni').value;
@@ -318,7 +390,6 @@
             html2pdf().from(element).set(opt).save();
         };
 
-        // --- NUEVA LÓGICA: PRECARGA ALEATORIA AL INICIAR ---
         window.addEventListener('DOMContentLoaded', () => {
             const sectores = ["Sector Centro", "Sector San Martín", "Zona Industrial", "Asociación Los Pinos", "Barrio Miraflores"];
             const sectorAzar = sectores[Math.floor(Math.random() * sectores.length)];
